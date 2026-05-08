@@ -125,7 +125,7 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 				{!tables.length && <Loader />}
 				{tables.length > 0 && <>
 					<div className="grid grid-cols-5 gap-x-2 gap-y-2 w-full">
-						{tables.slice(0, 25).map((table: TableType, i) => {
+						{tables.slice(0, 15).map((table: TableType, i) => {
 							const effectiveOccupancy = calculateEffectiveOccupancy(table.users);
 							const isFull = effectiveOccupancy >= TABLE_CAPACITY;
 							let tableColor: "default" | "full" | "selected" | "booked" = "default";
@@ -146,7 +146,7 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 						<h1 className="text-center font-black visible static md:fixed md:invisible tracking-tight mx-auto">Dance Floor</h1>
 					</div>
 					<div className="grid grid-cols-5 gap-x-2 gap-y-2 w-full">
-						{tables.slice(25, 100).map((table: TableType, i) => {
+						{tables.slice(15, 30).map((table: TableType, i) => {
 							const effectiveOccupancy = calculateEffectiveOccupancy(table.users);
 							const isFull = effectiveOccupancy >= TABLE_CAPACITY;
 							let tableColor: "default" | "full" | "selected" | "booked" = "default";

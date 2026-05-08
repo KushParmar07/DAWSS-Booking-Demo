@@ -47,8 +47,8 @@ export const getSpotsNeededForBookingUser = (currentUserId?: string, userId?: st
 export const tablesAtom = atom<TableType[]>((get) => {
 	const users = get(usersAtom);
 	const tablesMap = new Map<number, UserType[]>();
-	// Generate 100 empty tables by default
-	for (let i = 1; i <= 100; i++) {
+	// Generate 30 empty tables by default
+	for (let i = 1; i <= 30; i++) {
 		tablesMap.set(i, []);
 	}
 	// Place users into tables
@@ -59,7 +59,7 @@ export const tablesAtom = atom<TableType[]>((get) => {
 		}
 	});
 	const tables: TableType[] = [];
-	for (let i = 1; i <= 100; i++) {
+	for (let i = 1; i <= 30; i++) {
 		tables.push({ id: i, users: tablesMap.get(i) || [] });
 	}
 	return tables;
