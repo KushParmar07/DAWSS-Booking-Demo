@@ -1,20 +1,30 @@
+"use client";
 import Sidebar from "@/components/sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Breadcrumbs from "@/components/breadcrumbs";
-import { headers } from "next/headers";
 import { Separator } from "@/components/ui/separator";
 import { redirect } from "next/navigation";
 import ShowSidebar from "./showSidebar";
-import { getUser } from "@/lib/auth-server";
+import { useAtomValue } from "jotai";
+import { currentUserAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export default async function RootLayout({
+export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const user = await getUser(await headers());
+	const user = useAtomValue(currentUserAtom);
+	const [mounted, setMounted] = useState(false);
 
-	if (!user) return redirect("/login");
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) return <Loader />;
+
+	if (!user) return redirect("/");
 
 	return (
 		<SidebarProvider>

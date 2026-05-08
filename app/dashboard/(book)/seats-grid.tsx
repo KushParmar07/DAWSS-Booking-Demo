@@ -19,11 +19,13 @@ import { Separator } from "@/components/ui/separator";
 import Table from './table';
 import { useSearchParams } from "next/navigation";
 import { calculateEffectiveOccupancy, getSpotsNeededForBookingUser, hasGuestAtom, myTableAtom, newBookingAtom, table, TABLE_CAPACITY, tableInfo, tablesAtom, tableSidebarState } from "@/app/dashboard/(book)/shared";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { TableType, SeatsGridProps } from "@/app/dashboard/(book)/shared";
+import { usersAtom } from "@/lib/store";
 
 export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, initialTableId, currentUserTableId, currentUserRole, showTitle }: SeatsGridProps) {
-	const [tables, setTables] = useAtom<TableType[]>(tablesAtom);
+	const tables = useAtomValue(tablesAtom);
+	const [users, setUsers] = useAtom(usersAtom);
 	const [selectedTable, setSelectedTable] = useAtom(table);
 	const setTableInfo = useSetAtom(tableInfo);
 	const [myTable, setMyTable] = useAtom(myTableAtom);
@@ -40,50 +42,33 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 	const spotsNeededByCurrentUser = getSpotsNeededForBookingUser(currentUserId, userId, userBeingBooked, currentUserHasGuest);
 
 	const bookSpot = async (overwrite: boolean) => {
-		if (overwrite && userId) {
-			await fetch(`/api/admin/removebooking/${userId}`);
-			toast.info("Successfully overwritten.");
-		}
 		if (!selectedTable) {
 			toast.error("No table selected.");
 			setNewBooking(false);
 			return;
 		}
-		const res = await fetch(`/api/book/${selectedTable}${userId ? `?user=${userId}` : ""}`);
-		const text = await res.text();
-
-		if (res.ok) {
-			toast.success(text || "Successfully booked.");
-			getNewTables();
-			setTable(selectedTable);
-			setMyTable(selectedTable);
-		} else {
-			toast.error(text || "Booking failed.");
+		
+		const targetUserId = userId || currentUserId;
+		if (!targetUserId) {
+			toast.error("No user logged in.");
+			return;
 		}
+
+		setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, tableId: Number(selectedTable) } : u));
+		toast.success("Successfully booked.");
+		
+		setTable(selectedTable);
+		if (!userId) setMyTable(selectedTable);
 		setNewBooking(false);
 	};
 
-	const getNewTables = async () => {
-		const res = await fetch(`/api/listtables`);
-		if (!res.ok) {
-			toast.error("Failed to load tables.");
-			return;
-		}
-		const json: TableType[] = await res.json();
-		setTables(json);
-	};
-
 	useEffect(() => {
-		const tableInterval = setInterval(getNewTables, 2 * 60 * 1000);
-
 		if (initialTableId) setMyTable(String(initialTableId));
 		if (currentUserHasGuest) {
 			setCurrentUserHasGuest(true);
 		} else {
 			setCurrentUserHasGuest(false);
 		}
-
-		getNewTables();
 
 		if (tableParam) { // `book?table=x` takes priority
 			setTable(tableParam);
@@ -92,35 +77,18 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 		} else if (initialTableId) {
 			setTable(String(initialTableId));
 		}
-
-		return () => {
-			clearInterval(tableInterval);
-		}
-	}, []);
+	}, [initialTableId, currentUserHasGuest, tableParam, myTable]);
 
 	const setTable = async (id: string | number) => {
-		//Refresh tables, possible changes
-		getNewTables();
-
 		const idStr = id.toString();
 		setSelectedTable(idStr);
 		if (!idStr) {
 			setTableInfo(null);
 			return;
 		}
-		try {
-			const res = await fetch(`/api/tableinfo/${idStr}`);
-			if (!res.ok) {
-				toast.error(`Failed to load info for table ${idStr}.`);
-				setTableInfo(null);
-				return;
-			}
-			const tableData: TableType = await res.json();
-			setTableInfo(tableData);
-		} catch (error) {
-			console.error("Error in setTable:", error);
-			setTableInfo(null);
-		}
+		// find in our derived tables state
+		const t = tables.find(t => t.id === Number(idStr));
+		setTableInfo(t || null);
 	};
 
 	const handleTableClick = async (table: TableType) => {

@@ -1,18 +1,23 @@
+"use client";
 import Title, { Subtitle } from "@/components/title";
-import { headers } from "next/headers"
 import { redirect } from "next/navigation";
 import UserTable from './user-table';
-import { Metadata } from "next";
-import { getUser } from "@/lib/auth-server";
+import { useAtomValue } from "jotai";
+import { currentUserAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export const metadata: Metadata = {
-	title: "Admin"
-};
+export default function Admin() {
+	const user = useAtomValue(currentUserAtom);
+	const [mounted, setMounted] = useState(false);
 
-export default async function Admin() {
-	const user = await getUser(await headers());
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-	if (!user || !user.role) return redirect("/login");
+	if (!mounted) return <Loader />;
+
+	if (!user || !user.role) return redirect("/");
 
 	return (
 		<>

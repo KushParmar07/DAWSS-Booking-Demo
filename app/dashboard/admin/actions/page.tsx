@@ -1,20 +1,24 @@
+"use client";
+
 import Title, { Subtitle } from "@/components/title";
-import { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getUser } from "@/lib/auth-server";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { useAtomValue } from "jotai";
+import { currentUserAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export const metadata: Metadata = {
-	title: "Actions"
-}
+export default function AdminStats() {
+	const user = useAtomValue(currentUserAtom);
+	const [mounted, setMounted] = useState(false);
 
-export default async function AdminStats() {
-	const user = await getUser(await headers());
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-	if (!user || !user.role) return redirect("/login");
+	if (!mounted) return <Loader />;
+
+	if (!user || !user.role) return redirect("/");
 
 	return (
 		<>
@@ -26,14 +30,6 @@ export default async function AdminStats() {
 			<div className="max-w-[800px] mt-2">
 				<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-y-2 lg:gap-y-0 md:gap-x-2">
 					Coming Soon...
-					{/* <Card className="gap-0 w-full">
-						<CardHeader className="text-sm text-muted-foreground">
-							Table Actions
-						</CardHeader>
-						<CardContent>
-							<Button>Purge Unused Tables</Button>
-						</CardContent>
-					</Card> */}
 				</div>
 			</div>
 		</>

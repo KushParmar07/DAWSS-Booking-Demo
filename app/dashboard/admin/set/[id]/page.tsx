@@ -1,22 +1,32 @@
+"use client";
+
 import SeatsGrid from "@/app/dashboard/(book)/seats-grid";
 import Title, { Subtitle } from "@/components/title";
-import { db } from "@/drizzle/db";
-import { getUser } from "@/lib/auth-server";
-import { headers } from "next/headers"
-import { redirect } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
+import { useAtomValue } from "jotai";
+import { currentUserAtom, usersAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export default async function AdminSet({ params }: { params: Promise<{ id: string }> }) {
-	const user = await getUser(await headers());
+export default function AdminSet() {
+	const user = useAtomValue(currentUserAtom);
+	const users = useAtomValue(usersAtom);
+	const params = useParams();
+	const id = params.id as string;
 
-	if (!user || !user.role) return redirect("/login");
+	const [mounted, setMounted] = useState(false);
 
-	const { id } = await params;
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) return <Loader />;
+
+	if (!user || !user.role) return redirect("/");
 
 	if (!id) return <>User does not exist.</>;
 
-	const referencedUser = await db.query.user.findFirst({
-		where: (s, { eq }) => (eq(s.id, id)),
-	})
+	const referencedUser = users.find(u => u.id === id);
 
 	if (!referencedUser) return <>User does not exist.</>;
 

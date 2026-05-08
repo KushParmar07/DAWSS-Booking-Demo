@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, UploadCloud, Trash2, ShieldAlert, PlusCircle } from "lucide-react" // Added PlusCircle
+import { ArrowUpDown, MoreHorizontal, UploadCloud, Trash2, ShieldAlert, PlusCircle } from "lucide-react" 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -50,24 +50,17 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogClose, // Added DialogClose
-} from "@/components/ui/dialog" // Added Dialog components
-import { Label } from "@/components/ui/label" // Added Label for dialog inputs
+    DialogClose, 
+} from "@/components/ui/dialog" 
+import { Label } from "@/components/ui/label" 
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import * as XLSX from 'xlsx';
-
-interface UserInt {
-    id: string,
-    name: string,
-    email: string,
-    role: boolean,
-    tableId: string | null,
-    attending: boolean
-    hasGuest?: boolean
-}
+import { useAtom } from "jotai"
+import { usersAtom } from "@/lib/store"
+import { UserType } from "@/app/dashboard/(book)/shared"
 
 interface ExcelRow {
     Name?: string;
@@ -80,20 +73,20 @@ export default function UserTable() {
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({ id: false })
     const [rowSelection, setRowSelection] = React.useState({})
-    const [data, setData] = React.useState<UserInt[]>([]);
+    const [data, setData] = useAtom(usersAtom);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // State for confirmation dialogs
     const [showDeleteUserDialog, setShowDeleteUserDialog] = useState(false);
     const [showDeleteAllUsersDialog, setShowDeleteAllUsersDialog] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<UserInt | null>(null);
+    const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
 
     // State for Add User Dialog
     const [showAddUserDialog, setShowAddUserDialog] = useState(false);
     const [newUserName, setNewUserName] = useState("");
     const [newUserEmail, setNewUserEmail] = useState("");
 
-    const columns: ColumnDef<UserInt>[] = [
+    const columns: ColumnDef<UserType>[] = [
         {
             accessorKey: "name",
             header: ({ column }) => (
@@ -118,12 +111,10 @@ export default function UserTable() {
             header: "Attending",
             cell: ({ row }) => (
                 <Checkbox
-                    defaultChecked={row.getValue("attending")}
-                    onCheckedChange={async () => {
-                        const req = await fetch(`/api/admin/attending/${row.getValue("id")}`);
-                        if (req.ok) toast.success("Successfully changed.");
-                        else toast.error("Failed to change attending status.");
-                        getUsers();
+                    checked={row.getValue("attending") as boolean}
+                    onCheckedChange={(checked) => {
+                        setData(prev => prev.map(u => u.id === row.getValue("id") ? { ...u, attending: checked === true } : u));
+                        toast.success("Successfully changed.");
                     }}
                     aria-label="Select row"
                 />
@@ -134,17 +125,10 @@ export default function UserTable() {
             header: "Has Guest",
             cell: ({ row }) => (
                 <Checkbox
-                    defaultChecked={row.original.hasGuest || false}
-                    onCheckedChange={async () => {
-                        try {
-                            const req = await fetch(`/api/admin/hasguest/${row.original.id}`);
-                            const resJson = await req.json();
-                            if (req.ok) toast.success(resJson.message || "Successfully updated guest status.");
-                            else toast.error(`Failed to update guest status: ${resJson.message || req.statusText}`);
-                            getUsers();
-                        } catch {
-                            toast.error("An error occurred while updating guest status.");
-                        }
+                    checked={row.original.hasGuest || false}
+                    onCheckedChange={(checked) => {
+                        setData(prev => prev.map(u => u.id === row.original.id ? { ...u, hasGuest: checked === true } : u));
+                        toast.success("Successfully updated guest status.");
                     }}
                     aria-label="Toggle has guest status"
                 />
@@ -153,7 +137,7 @@ export default function UserTable() {
         {
             accessorKey: "booked",
             header: "Booked",
-            cell: ({ row }) => <Checkbox checked={row.original.tableId !== null} aria-label="Select row" disabled />,
+            cell: ({ row }) => <Checkbox checked={row.original.tableId !== undefined && row.original.tableId !== null} aria-label="Select row" disabled />,
         },
         {
             id: "actions",
@@ -165,22 +149,15 @@ export default function UserTable() {
                         <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => user.tableId && redirect(`/dashboard?table=${user.tableId}`)}>Show Table</DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => {
-                                const res = await fetch(`/api/admin/removebooking/${user.id}`);
-                                if (res.ok) {
-                                    toast.success("Successfully removed booking.");
-                                    getUsers();
-                                } else {
-                                    toast.error("Failed to remove booking.");
-                                }
+                            <DropdownMenuItem onClick={() => {
+                                setData(prev => prev.map(u => u.id === user.id ? { ...u, tableId: undefined } : u));
+                                toast.success("Successfully removed booking.");
                             }}>Remove Selection</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => redirect(`/dashboard/admin/set/${user.id}`)}>Change Table</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 onClick={() => {
                                     setUserToDelete(user);
                                     setShowDeleteUserDialog(true);
-                                    getUsers();
                                 }}
                                 className="text-red-600 hover:!text-red-700"
                             >
@@ -193,7 +170,6 @@ export default function UserTable() {
             },
         },
     ];
-
 
     const table = useReactTable({
         data,
@@ -220,30 +196,13 @@ export default function UserTable() {
         }
     })
 
-    const getUsers = async () => {
-        try {
-            const res = await fetch(`/api/admin/listusers`);
-            if (!res.ok) throw new Error(`Failed to fetch users: ${res.statusText}`);
-            const json = await res.json();
-            setData(json);
-            // toast.success("Users have been refreshed.");
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            toast.error("Could not load user data.");
-        }
-    }
-
-    useEffect(() => {
-        getUsers();
-    }, [])
-
     const handleExport = () => {
         const rowsToExport = table.getFilteredRowModel().rows.map(row => {
-            const original = row.original as UserInt;
+            const original = row.original as UserType;
             return {
                 "Name": original.name, "ID": original.id, "Email": original.email,
                 "Table Number": original.tableId || "None", "Attending": original.attending ? "Yes" : "No",
-                "Has Guest": original.hasGuest ? "Yes" : "No", "Booked": original.tableId !== null ? "Yes" : "No",
+                "Has Guest": original.hasGuest ? "Yes" : "No", "Booked": original.tableId !== undefined ? "Yes" : "No",
             };
         });
         if (rowsToExport.length === 0) { toast.error("No data to export."); return; }
@@ -267,37 +226,30 @@ export default function UserTable() {
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonRows = XLSX.utils.sheet_to_json<ExcelRow>(worksheet);
                 if (jsonRows.length === 0) { toast.info("Excel file is empty."); return; }
-                toast.info(`Found ${jsonRows.length} users. Starting upload...`);
-                let successCount = 0, failCount = 0, skippedCount = 0;
+                
+                const newUsers: UserType[] = [];
                 for (const row of jsonRows) {
                     const name = row.Name, email = row.Email;
                     if (!name || !email || typeof name !== 'string' || typeof email !== 'string') {
-                        toast.warning(`Skipping row: missing or invalid Name/Email (${JSON.stringify(row)})`);
-                        failCount++; continue;
+                        continue;
                     }
-                    try {
-                        const response = await fetch(`/api/seed?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`);
-                        if (response.ok || response.status === 201) successCount++;
-                        else if (response.status === 409) skippedCount++;
-                        else {
-                            const errorResult = await response.json().catch(() => ({ message: response.statusText }));
-                            toast.error(`Failed to process ${name} (${email}): ${errorResult.message || response.statusText}`);
-                            failCount++;
-                        }
-                    } catch {
-                        toast.error(`Client-side error processing ${name} (${email}).`);
-                        failCount++;
+                    if (!data.some(u => u.email === email) && !newUsers.some(u => u.email === email)) {
+                        newUsers.push({
+                            id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            name,
+                            email,
+                            role: false,
+                            attending: false,
+                            hasGuest: false
+                        });
                     }
                 }
-                let summaryMessage = "";
-                if (successCount > 0) summaryMessage += `${successCount} new users added. `;
-                if (skippedCount > 0) summaryMessage += `${skippedCount} existing users skipped. `;
-                if (failCount > 0) summaryMessage += `${failCount} users failed to process.`;
-                if (summaryMessage) {
-                    if (failCount > 0) toast.warning(summaryMessage.trim() + " Check console.");
-                    else toast.success(summaryMessage.trim() || "Processing complete.");
-                } else if (jsonRows.length > 0) toast.info("No users processed (check data/console).");
-                getUsers();
+                if (newUsers.length > 0) {
+                    setData(prev => [...prev, ...newUsers]);
+                    toast.success(`${newUsers.length} users imported.`);
+                } else {
+                    toast.info("No new users found to import.");
+                }
             } catch {
                 toast.error("Failed to process Excel. Ensure 'Name' & 'Email' columns exist.");
             } finally {
@@ -310,31 +262,15 @@ export default function UserTable() {
 
     const confirmDeleteUser = async () => {
         if (!userToDelete) return;
-        try {
-            const response = await fetch(`/api/admin/deleteuser/${userToDelete.id}`, { method: 'DELETE' });
-            const result = await response.json();
-            if (response.ok) {
-                toast.success(result.message || `User ${userToDelete.name} deleted.`);
-                getUsers();
-            } else toast.error(result.message || "Failed to delete user.");
-        } catch {
-            toast.error("Error deleting user.");
-        }
+        setData(prev => prev.filter(u => u.id !== userToDelete.id));
+        toast.success(`User ${userToDelete.name} deleted.`);
         setShowDeleteUserDialog(false);
         setUserToDelete(null);
     };
 
     const confirmDeleteAllUsers = async () => {
-        try {
-            const response = await fetch(`/api/admin/deleteallusers`, { method: 'DELETE' });
-            const result = await response.json();
-            if (response.ok) {
-                toast.success(result.message || "All users deleted.");
-                getUsers();
-            } else toast.error(result.message || "Failed to delete all users.");
-        } catch {
-            toast.error("Error deleting all users.");
-        }
+        setData([]);
+        toast.success("All users deleted.");
         setShowDeleteAllUsersDialog(false);
     };
 
@@ -343,33 +279,28 @@ export default function UserTable() {
             toast.error("Name and Email cannot be empty.");
             return;
         }
-        // Basic email validation (optional, but good practice)
         if (!/\S+@\S+\.\S+/.test(newUserEmail)) {
             toast.error("Please enter a valid email address.");
             return;
         }
-
-        try {
-            const response = await fetch(`/api/seed?email=${encodeURIComponent(newUserEmail)}&name=${encodeURIComponent(newUserName)}`);
-            const result = await response.json().catch(() => ({ message: response.statusText })); // Catch if response is not JSON
-
-            if (response.ok || response.status === 201) {
-                toast.success(result.message || `User ${newUserName} added successfully!`);
-                getUsers();
-                setShowAddUserDialog(false); // Close dialog on success
-                setNewUserName(""); // Reset fields
-                setNewUserEmail("");
-            } else if (response.status === 409) {
-                toast.warning(result.message || `User with email ${newUserEmail} already exists.`);
-            } else {
-                toast.error(result.message || `Failed to add user. Status: ${response.status}`);
-            }
-        } catch (error) {
-            toast.error("An error occurred while adding the user.");
-            console.error("Manual add user error:", error);
+        if (data.some(u => u.email === newUserEmail)) {
+            toast.warning(`User with email ${newUserEmail} already exists.`);
+            return;
         }
+        
+        setData(prev => [...prev, {
+            id: `user-${Date.now()}`,
+            name: newUserName,
+            email: newUserEmail,
+            role: false,
+            attending: false,
+            hasGuest: false
+        }]);
+        toast.success(`User ${newUserName} added successfully!`);
+        setShowAddUserDialog(false);
+        setNewUserName("");
+        setNewUserEmail("");
     };
-
 
     return (
         <div className="w-full -mt-2">
@@ -394,7 +325,7 @@ export default function UserTable() {
                             <DialogHeader>
                                 <DialogTitle>Add New Student</DialogTitle>
                                 <DialogDescription>
-                                    Manually add a new student to the system. Click save when you&apos;re done.
+                                    Manually add a new student to the system. Click save when you're done.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">

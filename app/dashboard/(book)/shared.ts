@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { usersAtom } from '@/lib/store';
 
 export const TABLE_CAPACITY = 10;
 
@@ -43,7 +44,26 @@ export const getSpotsNeededForBookingUser = (currentUserId?: string, userId?: st
 	return currentUserHasGuest ? 2 : 1;
 };
 
-export const tablesAtom = atom<TableType[]>([]);
+export const tablesAtom = atom<TableType[]>((get) => {
+	const users = get(usersAtom);
+	const tablesMap = new Map<number, UserType[]>();
+	// Generate 100 empty tables by default
+	for (let i = 1; i <= 100; i++) {
+		tablesMap.set(i, []);
+	}
+	// Place users into tables
+	users.forEach(u => {
+		if (u.tableId) {
+			const t = tablesMap.get(u.tableId);
+			if (t) t.push(u);
+		}
+	});
+	const tables: TableType[] = [];
+	for (let i = 1; i <= 100; i++) {
+		tables.push({ id: i, users: tablesMap.get(i) || [] });
+	}
+	return tables;
+});
 export const table = atom("");
 export const tableInfo = atom<TableType | null>(null);
 export const myTableAtom = atom("");

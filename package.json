@@ -6,10 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "start:prod": "npm run migrate && next start",
-    "lint": "next lint",
-    "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate"
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.13",
@@ -25,11 +22,8 @@
     "@radix-ui/react-tabs": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@tanstack/react-table": "^8.21.3",
-    "better-auth": "1.2.7",
-    "better-sqlite3": "^12.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "drizzle-orm": "^0.43.1",
     "jotai": "^2.12.4",
     "lucide-react": "^0.507.0",
     "next": "^15.3.2",
@@ -37,7 +31,6 @@
     "nextjs-toploader": "^3.8.16",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "resend": "^4.5.0",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "xlsx": "^0.18.5"
@@ -45,11 +38,9 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.0",
     "eslint": "^9",
     "eslint-config-next": "^15.4.0-canary.51",
     "tailwindcss": "^4",

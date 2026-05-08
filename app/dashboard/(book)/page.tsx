@@ -1,20 +1,23 @@
+"use client";
 import SeatsGrid from "./seats-grid";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Metadata } from "next";
-import { getOnboarding, getUser } from "@/lib/auth-server";
+import { useAtomValue } from "jotai";
+import { currentUserAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export const metadata: Metadata = {
-	title: "Book"
-};
+export default function Book() {
+	const user = useAtomValue(currentUserAtom);
+	const [mounted, setMounted] = useState(false);
 
-export default async function Book() {
-	if (await getOnboarding()) return redirect("/onboarding");
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-	const user = await getUser(await headers());
+	if (!mounted) return <Loader />;
 
 	if (!user) {
-		return redirect("/login");
+		return redirect("/");
 	}
 
 	return (

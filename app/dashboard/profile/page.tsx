@@ -1,21 +1,26 @@
+"use client";
+
 import Title, { Subtitle } from "@/components/title";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import SignOut from "./sign-out";
-import { Metadata } from "next";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import Link from "next/link";
-import { getUser } from "@/lib/auth-server";
+import { useAtomValue } from "jotai";
+import { currentUserAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export const metadata: Metadata = {
-	title: "Profile"
-};
+export default function Profile() {
+	const user = useAtomValue(currentUserAtom);
+	const [mounted, setMounted] = useState(false);
 
-export default async function Profile() {
-	const user = await getUser(await headers());
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-	if (!user) return redirect("/login");
+	if (!mounted) return <Loader />;
+
+	if (!user) return redirect("/");
 
 	const submitted = user.tableId;
 
@@ -33,9 +38,6 @@ export default async function Profile() {
 						{submitted ? <p>You may still make changes until June 13th.</p> : <p>Booking is still open until June 13th. <Link className="font-bold underline" href="/dashboard">Submit Now</Link></p>}
 					</AlertDescription>
 				</Alert>
-			</div>
-			<div>
-				<SignOut />
 			</div>
 		</div>
 	)

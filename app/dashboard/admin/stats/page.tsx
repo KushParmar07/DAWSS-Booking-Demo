@@ -1,27 +1,31 @@
+"use client";
+
 import Title, { Subtitle } from "@/components/title";
-import { db } from "@/drizzle/db";
-import { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { count, eq, isNotNull } from "drizzle-orm";
-import { user as userSchema } from "@/drizzle/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getUser } from "@/lib/auth-server";
 import { Separator } from "@/components/ui/separator";
+import { useAtomValue } from "jotai";
+import { currentUserAtom, usersAtom } from "@/lib/store";
+import { useEffect, useState } from "react";
+import Loader from "@/components/loader";
 
-export const metadata: Metadata = {
-	title: "Statistics"
-}
+export default function AdminStats() {
+	const user = useAtomValue(currentUserAtom);
+	const users = useAtomValue(usersAtom);
+	const [mounted, setMounted] = useState(false);
 
-export default async function AdminStats() {
-	const user = await getUser(await headers());
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-	if (!user || !user.role) return redirect("/login");
+	if (!mounted) return <Loader />;
 
-	const totalUsers = await db.select({ count: count() }).from(userSchema);
-	const totalAttending = await db.select({ count: count() }).from(userSchema).where(eq(userSchema.attending, true));
-	const totalGuests = await db.select({ count: count() }).from(userSchema).where(eq(userSchema.hasGuest, true));
-	const totalBooked = await db.select({ count: count() }).from(userSchema).where(isNotNull(userSchema.tableId));
+	if (!user || !user.role) return redirect("/");
+
+	const totalUsers = users.length;
+	const totalAttending = users.filter(u => u.attending).length;
+	const totalGuests = users.filter(u => u.hasGuest).length;
+	const totalBooked = users.filter(u => u.tableId !== undefined && u.tableId !== null).length;
 
 	return (
 		<>
@@ -37,7 +41,7 @@ export default async function AdminStats() {
 							Total Users
 						</CardHeader>
 						<CardContent>
-							<h1 className="text-3xl font-bold">{totalUsers[0].count}</h1>
+							<h1 className="text-3xl font-bold">{totalUsers}</h1>
 						</CardContent>
 					</Card>
 					<Card className="gap-0 w-full">
@@ -45,7 +49,7 @@ export default async function AdminStats() {
 							Total Attendees
 						</CardHeader>
 						<CardContent>
-							<h1 className="text-3xl font-bold">{totalAttending[0].count}</h1>
+							<h1 className="text-3xl font-bold">{totalAttending}</h1>
 						</CardContent>
 					</Card>
 					<Card className="gap-0 w-full">
@@ -53,7 +57,7 @@ export default async function AdminStats() {
 							Total Booked
 						</CardHeader>
 						<CardContent>
-							<h1 className="text-3xl font-bold">{totalBooked[0].count}</h1>
+							<h1 className="text-3xl font-bold">{totalBooked}</h1>
 						</CardContent>
 					</Card>
 					<Card className="gap-0 w-full">
@@ -61,7 +65,7 @@ export default async function AdminStats() {
 							Total Guests
 						</CardHeader>
 						<CardContent>
-							<h1 className="text-3xl font-bold">{totalGuests[0].count}</h1>
+							<h1 className="text-3xl font-bold">{totalGuests}</h1>
 						</CardContent>
 					</Card>
 				</div>

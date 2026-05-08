@@ -19,8 +19,9 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar"
-import { signOut } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
+import { useSetAtom } from "jotai"
+import { currentUserIdAtom } from "@/lib/store"
 
 export function NavUser({
 	user,
@@ -32,6 +33,7 @@ export function NavUser({
 }) {
 	const router = useRouter();
 	const { isMobile, setOpenMobile } = useSidebar()
+	const setCurrentUserId = useSetAtom(currentUserIdAtom);
 
 	return (
 		<SidebarMenu>
@@ -64,15 +66,10 @@ export function NavUser({
 							</div>
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={async () => {
+						<DropdownMenuItem onClick={() => {
 							setOpenMobile(false);
-							await signOut({
-								fetchOptions: {
-									onSuccess: () => {
-										router.push("/");
-									},
-								},
-							});;
+							setCurrentUserId(null);
+							router.push("/");
 						}}>
 							<LogOut />
 							Log out
