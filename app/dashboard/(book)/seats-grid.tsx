@@ -23,9 +23,9 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { TableType, SeatsGridProps } from "@/app/dashboard/(book)/shared";
 import { usersAtom } from "@/lib/store";
 
-export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, initialTableId, currentUserTableId, currentUserRole, showTitle }: SeatsGridProps) {
+export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, initialTableId, currentUserRole, showTitle }: SeatsGridProps) {
 	const tables = useAtomValue(tablesAtom);
-	const [users, setUsers] = useAtom(usersAtom);
+	const [, setUsers] = useAtom(usersAtom);
 	const [selectedTable, setSelectedTable] = useAtom(table);
 	const setTableInfo = useSetAtom(tableInfo);
 	const [myTable, setMyTable] = useAtom(myTableAtom);
@@ -41,7 +41,7 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 
 	const spotsNeededByCurrentUser = getSpotsNeededForBookingUser(currentUserId, userId, userBeingBooked, currentUserHasGuest);
 
-	const bookSpot = async (overwrite: boolean) => {
+	const bookSpot = async () => {
 		if (!selectedTable) {
 			toast.error("No table selected.");
 			setNewBooking(false);
@@ -62,6 +62,7 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 		setNewBooking(false);
 	};
 
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		if (initialTableId) setMyTable(String(initialTableId));
 		if (currentUserHasGuest) {
@@ -190,7 +191,7 @@ export default function SeatsGrid({ currentUserId, currentUserHasGuest, userId, 
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={() => bookSpot(false)}>Continue</AlertDialogAction>
+						<AlertDialogAction onClick={() => bookSpot()}>Continue</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

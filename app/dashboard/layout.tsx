@@ -44,7 +44,6 @@ export default function RootLayout({
 			<ShowSidebar currentUserId={user.id}
 				currentUserHasGuest={user.hasGuest ?? false}
 				initialTableId={user.tableId}
-				currentUserTableId={user.tableId}
 				currentUserRole={user.role ?? false} />
 		</SidebarProvider>
 	);

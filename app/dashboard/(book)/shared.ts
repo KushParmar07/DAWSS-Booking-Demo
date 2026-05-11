@@ -24,7 +24,6 @@ export interface SeatsGridProps {
 	currentUserHasGuest: boolean;
 	userId?: string;
 	initialTableId?: number | null;
-	currentUserTableId?: number | null;
 	currentUserRole?: boolean;
 	showTitle?: boolean;
 }

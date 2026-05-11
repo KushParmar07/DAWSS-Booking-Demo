@@ -26,7 +26,6 @@ export default function Book() {
 				currentUserId={user.id}
 				currentUserHasGuest={user.hasGuest ?? false}
 				initialTableId={user.tableId}
-				currentUserTableId={user.tableId}
 				currentUserRole={user.role ?? false}
 				showTitle={true}
 			/>

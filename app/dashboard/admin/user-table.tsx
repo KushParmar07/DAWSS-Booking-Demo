@@ -53,7 +53,7 @@ import {
     DialogClose, 
 } from "@/components/ui/dialog" 
 import { Label } from "@/components/ui/label" 
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -325,7 +325,7 @@ export default function UserTable() {
                             <DialogHeader>
                                 <DialogTitle>Add New Student</DialogTitle>
                                 <DialogDescription>
-                                    Manually add a new student to the system. Click save when you're done.
+                                    Manually add a new student to the system. Click save when you&apos;re done.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
